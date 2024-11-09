@@ -49,6 +49,7 @@ class Room {
     });
 
     data.socket.emit("added", `hey ${data.userName}!, you have been added`);
+    this.broadcastToClients();
   }
 
   addQuestion(data: {
@@ -67,9 +68,55 @@ class Room {
     });
 
     this.adminSocket.emit("question_added", "question has been added");
+    this.broadcastToClients();
   }
 
-  submitAnswer(data: {}) {}
+  // deleting question from front and make sure there is question at 0 instead of 1 index
+  // Destructuring with rest to skip the first element
+  // Assign the remaining elements back to questions array
+  deleteQuestion() {
+    if(this.questions.length == 0) return;
+    const [, ...rest] = this.questions;
+    this.questions = rest;
+    this.broadcastToClients();
+  }
+
+  submitAnswer(data: { userId: string; questionId: string; answerId: string }) {
+    const question = this.questions[Number(data.questionId) - 1];
+    const user = this.clients.filter((client) => {
+      return client.clientId == data.userId;
+    });
+    if (question.ansId != data.answerId) {
+      user[0].socket.emit("submit", "your answer is wrong");
+    } else {
+      user[0].points += Number(question.id) * 100;
+      user[0].socket.emit("submit", "your answer is right");
+    }
+  }
+
+  showLeaderboard() {
+    this.clients.forEach((client) => {
+      client.socket.emit("leadboard", this.clients);
+    });
+  }
+
+  leaveRoom(data: { userId: string }) {
+    this.clients = this.clients.filter(
+      (client) => client.clientId !== data.userId
+    );
+  }
+
+  broadcastToClients() {
+    this.clients.forEach((client) => {
+      client.socket.emit("questions", {
+        currentQuestion: {
+          id: this.questions[0].id,
+          value: this.questions[0].value,
+          options: this.questions[0].answer,
+        },
+      });
+    });
+  }
 }
 
 export default Room;

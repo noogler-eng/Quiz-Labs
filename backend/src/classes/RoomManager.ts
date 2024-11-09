@@ -22,6 +22,26 @@ class RoomManager {
     });
     this.rooms.set(roomId, room);
   }
+
+  handelRoomFunction(data: { roomId: string; type: string }) {
+    const room = this.rooms.get(data.roomId);
+    if (!room) return;
+
+    if (data.type == "init_room") {
+      room.addClient(data);
+    } else if (data.type == "add_ques") {
+      room.addQuestion(data);
+    } else if (data.type == "delete_ques") {
+      room.deleteQuestion();
+    } else if (data.type == "submit_ans") {
+      room.submitAnswer(data);
+    } else if (data.type == "rating_dashboard") {
+      room.showLeaderboard();
+    } else if (data.type == "add_reaction") {
+    } else {
+      room.leaveRoom(data);
+    }
+  }
 }
 
 export default RoomManager;
